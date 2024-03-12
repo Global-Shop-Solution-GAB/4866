@@ -1,0 +1,141 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Size(7035,2610)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Form_UnLoad)
+Gui.Form..Caption("Job Sequence Information")
+Gui.Form..Sizeable(False)
+Gui.Form..MaxButton(False)
+Gui.Form.lbl1.Create(Label,"Sequence Number",True,1530,255,0,90,225,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtSeq.Create(TextBox,"",True,1215,300,0,1635,165,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtSeq.Locked(True)
+Gui.Form.lbl2.Create(Label,"Workcenter",True,1215,255,0,90,765,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtWC.Create(TextBox,"",True,1215,300,0,1635,705,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtWC.Locked(True)
+Gui.Form.lbl3.Create(Label,"Op Code",True,1050,255,0,90,1335,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtOP.Create(TextBox,"",True,1215,300,0,1635,1275,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtOP.Locked(True)
+Gui.Form.lbl4.Create(Label,"Description",True,1260,255,0,90,1860,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtDesc.Create(TextBox,"",True,2325,300,0,1635,1800,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtDesc.Locked(True)
+Gui.Form.lbl5.Create(Label,"Estimated Hours",True,1290,255,0,3960,225,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtEst.Create(TextBox,"",True,1215,300,0,5430,165,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtEst.Locked(True)
+Gui.Form.lbl6.Create(Label,"Actual Hours",True,1200,255,0,3960,765,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtAct.Create(TextBox,"",True,1215,300,0,5430,705,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtAct.Locked(True)
+Gui.Form.lbl7.Create(Label,"Remaining Hours",True,1365,255,0,3960,1335,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtRem.Create(TextBox,"",True,1215,300,0,5430,1275,True,0,"Arial",8,-2147483643,1)
+Gui.Form.txtRem.Locked(True)
+Gui.Form.timer.Create(Timer)
+Gui.Form.timer.Size(495,495)
+Gui.Form.timer.Position(4320,1935)
+Gui.Form.timer.Event(Timer,Form_UnLoad)
+Gui.Form.cmd1.Create(Button)
+Gui.Form.cmd1.Size(855,375)
+Gui.Form.cmd1.Position(5100,1770)
+Gui.Form.cmd1.Caption("OK")
+Gui.Form.cmd1.Event(Click,cmd1_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+'this project runs from hook # 15935, When a user clocks into a job in the GUI
+V.Local.sIcon.Declare(String)
+F.Intrinsic.String.Build("{0}\GAB\GAS\gss2.ico",V.Caller.PluginsDir,V.Local.sIcon)
+gui.Form..icon(V.Local.sIcon)
+F.ODBC.Connection!con.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+Function.Intrinsic.Control.If(V.Caller.Hook, =, 15935)
+	Function.Intrinsic.Control.CallSub(Form)
+Function.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4866_Job_Info.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.CallSub(form_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.Form.Start
+F.Intrinsic.Control.SetErrorHandler("Form_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+
+V.Local.iLeft.Declare(Long)
+
+V.Local..BulkDeclareString(ssql, sRet)
+F.Intrinsic.String.Build("Select OPERATION, DESCRIPTION, HOURS_ESTIMATED, HOURS_ACTUAL From JOB_OPERATIONS Where JOB='{0}' And SUFFIX='{1}' And SEQ= '{2}'", V.Passed.009000, V.Passed.009001, V.Passed.009002, V.Local.ssql)
+F.Data.DataTable.CreateFromSQL("T", "con", V.Local.ssql)
+Function.Intrinsic.Control.If(V.DataTable.T.RowCount, >, 0)
+	F.Intrinsic.Math.Sub(V.DataTable.T(0).HOURS_ESTIMATED!FieldVal, V.DataTable.T(0).HOURS_ACTUAL!FieldVal, V.Local.iLeft)
+	GUI.Form.txtAct.Text(V.DataTable.T(0).HOURS_ACTUAL!FieldVal)
+	GUI.Form.txtDesc.Text(V.DataTable.T(0).DESCRIPTION!FieldVal)
+	GUI.Form.txtEst.Text(V.DataTable.T(0).HOURS_ESTIMATED!FieldVal)
+	GUI.Form.txtOP.Text(V.DataTable.T(0).OPERATION!FieldVal)
+	GUI.Form.txtRem.Text(V.Local.iLeft)
+	GUI.Form.txtSeq.Text(V.Passed.009002)
+	GUI.Form.txtWC.Text(V.Passed.009004)
+Function.Intrinsic.Control.EndIf
+GUI.Form..Show
+GUI.Form.timer.Interval(10000)
+GUI.Form.timer.Enabled(TRUE)
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Form_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4866_Job_Info.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.CallSub(form_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Form.End
+
+Program.Sub.Form_UnLoad.Start
+F.Intrinsic.Control.SetErrorHandler("Form_UnLoad_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+
+'close connection
+F.ODBC.connection!con.Close
+'end the program
+F.Intrinsic.control.End
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Form_UnLoad_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4866_Job_Info.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.End
+
+Function.Intrinsic.Control.EndIf
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.cmd1_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmd1_Click_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+
+Function.Intrinsic.Control.CallSub(form_unload)
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("cmd1_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4866_Job_Info.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.CallSub(form_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmd1_Click.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$DH1$}$12/21/2017 1:51:42 PM$}$False
+Program.Sub.Comments.End
